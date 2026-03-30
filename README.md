@@ -1,20 +1,6 @@
 # NextConnect
 
-Open-source Next.js web3 template with embedded wallets, smart accounts, and full auth — no thirdweb dependency, no vendor lock-in.
-
-## What This Replaces
-
-This template provides the same functionality as thirdweb's SDK using only open-source libraries:
-
-| Feature | Thirdweb | NextConnect |
-|---------|----------|-------------|
-| Wallet connection | `ConnectButton` | `<ConnectButton />` (wagmi + custom UI) |
-| Embedded wallets | `inAppWallet()` | Web3Auth (MPC key management) |
-| Smart accounts | `smartAccount` config | permissionless.js (ERC-4337) |
-| Gas sponsorship | `sponsorGas: true` | Configurable paymaster |
-| Auth sessions | `ThirdwebProvider` | NextAuth + SIWE |
-| React hooks | `useActiveAccount` | `useActiveAccount` (drop-in) |
-| Theming | `darkTheme`/`lightTheme` | CSS variables (8 themes) |
+Open-source Next.js web3 template with embedded wallets, smart accounts, and full auth — no vendor lock-in.
 
 ## Stack
 
@@ -25,11 +11,26 @@ This template provides the same functionality as thirdweb's SDK using only open-
 - **NextAuth** + **SIWE** — server-verified sessions with Sign-In with Ethereum
 - **shadcn/ui** + **Tailwind CSS** — beautiful, themeable components
 
+## Features
+
+- External wallet connection (MetaMask, WalletConnect, Coinbase)
+- Web3Auth social login / email (MPC key management, non-custodial)
+- ConnectButton with modal, wallet selector, account details panel
+- Wallet dashboard with tokens, NFTs, transaction history
+- Send / receive with token search and selection
+- Network selector (14 chains — mainnets and testnets)
+- Private key export for embedded wallets
+- NextAuth sessions with SIWE (Sign-In with Ethereum)
+- Admin dashboard with wallet-based access gating
+- Server-side admin route protection via middleware
+- 8 built-in themes (Gruvbox, Nord, Everforest, Catppuccin — light & dark)
+- ERC-4337 smart account support via permissionless.js
+
 ## Quick Start
 
 ```bash
 # 1. Clone
-git clone <repo-url> && cd nextconnect
+git clone https://github.com/Web3dGuy/nextconnect-web3.git && cd nextconnect-web3
 
 # 2. Copy env and fill in your keys
 cp .env.example .env.local
@@ -50,9 +51,11 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_WEB3AUTH_CLIENT_ID` | For social login | [Web3Auth Dashboard](https://dashboard.web3auth.io) (free) |
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | For WalletConnect | [WalletConnect Cloud](https://cloud.walletconnect.com) (free) |
 | `NEXTAUTH_SECRET` | Yes | Any random string (`openssl rand -hex 32`) |
-| `NEXT_PUBLIC_BUNDLER_URL` | For smart accounts | [Pimlico](https://pimlico.io) (free tier) or self-host [Alto](https://github.com/pimlicolabs/alto) |
+| `NEXT_PUBLIC_BUNDLER_URL` | For smart accounts | [Pimlico](https://dashboard.pimlico.io) (free tier) |
 | `NEXT_PUBLIC_PAYMASTER_URL` | For gas sponsorship | Same as bundler provider |
 | `NEXT_PUBLIC_FACTORY_ADDRESS` | For smart accounts | Deploy your own or use default |
+
+See `.env.example` for full details with links to each service.
 
 ## Project Structure
 
@@ -68,11 +71,20 @@ src/
 │   ├── providers/
 │   │   └── NextConnectProvider    # Wagmi + QueryClient + NextAuth + Theme
 │   ├── connect/
-│   │   ├── ConnectButton          # Drop-in thirdweb replacement
+│   │   ├── ConnectButton          # Main connect/wallet button
 │   │   ├── ConnectModal           # Wallet selection + social login
 │   │   ├── WalletOptions          # MetaMask, WalletConnect, Coinbase
 │   │   ├── SocialLogin            # Web3Auth email/social
 │   │   └── AccountDetails         # Connected account panel
+│   ├── wallet/
+│   │   ├── WalletDashboard        # Tabbed wallet management UI
+│   │   ├── NetworkSelector        # Chain switcher (14 networks)
+│   │   ├── TokenList              # ERC20 token balances
+│   │   ├── NFTGallery             # NFT viewer
+│   │   ├── TransactionList        # Transaction history
+│   │   ├── SendModal              # Send tokens
+│   │   ├── ReceiveModal           # Receive with QR code
+│   │   └── WalletSettings         # Key export, linked accounts
 │   ├── theme/                     # Theme provider + switcher
 │   └── ui/                        # shadcn/ui primitives
 │
@@ -86,85 +98,12 @@ src/
 ├── lib/
 │   ├── web3/                      # Wagmi config, viem clients, Web3Auth, chains
 │   ├── smart-account/             # permissionless.js client, bundler, paymaster
+│   ├── tokens/                    # ERC20/ERC721 helpers, default token lists
+│   ├── transactions/              # Transaction history store
 │   └── auth/                      # NextAuth config, SIWE helpers
 │
 └── middleware.ts                   # Protects /admin with NextAuth
 ```
-
-## Migrating from Thirdweb (cohorde/web)
-
-Only 4 files need modification, 2 files deleted:
-
-### 1. Replace `src/app/client.ts`
-Delete this file. The viem/wagmi config in `lib/web3/config.ts` replaces it.
-
-### 2. Update `src/app/layout.tsx`
-```diff
-- import { ThirdwebProvider } from "thirdweb/react";
-+ import { NextConnectProvider } from "@/components/providers/NextConnectProvider";
-
-- <ThirdwebProvider>
-+ <NextConnectProvider>
-    {children}
-- </ThirdwebProvider>
-+ </NextConnectProvider>
-```
-
-### 3. Update pages using ConnectButton
-```diff
-- import { ConnectButton, useActiveAccount } from "thirdweb/react";
-- import { polygonAmoy } from "thirdweb/chains";
-- import { inAppWallet } from "thirdweb/wallets";
-- import { client } from "./client";
-+ import { ConnectButton } from "@/components/connect/ConnectButton";
-+ import { useActiveAccount } from "@/hooks/useActiveAccount";
-
-// Remove wallet config array — handled by provider
-- const wallets = [inAppWallet({ smartAccount: { ... } })];
-
-// Replace ConnectButton usage
-- <ConnectButton client={client} wallets={wallets} theme={twTheme} ... />
-+ <ConnectButton appName="CoHorde" />
-
-// useActiveAccount returns { address, isConnected, ... } instead of Account object
-- account.address
-+ account.address  // same!
-```
-
-### 4. Delete `src/lib/thirdweb-theme.ts`
-Theming is now CSS variable-based. No JS theme object needed.
-
-### 5. Update `package.json`
-```diff
-- "thirdweb": "^5"
-+ "viem": "^2",
-+ "wagmi": "^2",
-+ "@tanstack/react-query": "^5",
-+ "@web3auth/modal": "^9",
-+ "@web3auth/ethereum-provider": "^9",
-+ "@web3auth/base": "^9",
-+ "@web3auth/web3auth-wagmi-connector": "^7",
-+ "permissionless": "^0.2",
-+ "next-auth": "^4",
-+ "siwe": "^2"
-```
-
-## Features
-
-### Working Now
-- External wallet connection (MetaMask, WalletConnect, Coinbase)
-- Web3Auth social login / email (with NEXT_PUBLIC_WEB3AUTH_CLIENT_ID)
-- ConnectButton with modal, wallet selector, account details panel
-- NextAuth sessions with SIWE (Sign-In with Ethereum)
-- Server-side admin route protection via middleware
-- Client-side admin wallet gating
-- 8 built-in themes (Gruvbox, Nord, Everforest, Catppuccin — light & dark)
-- Smart account initialization via permissionless.js
-
-### With Configuration
-- ERC-4337 smart account transactions (needs bundler URL)
-- Gas sponsorship (needs paymaster URL)
-- Account factory deployment (Foundry contracts in `/contracts`)
 
 ## Cost
 

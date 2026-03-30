@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "NextConnect — Web3 Auth & Wallet Template",
   description:
-    "Open-source Next.js template with embedded wallets, smart accounts, and full auth — no thirdweb required.",
+    "Open-source Next.js template with embedded wallets, smart accounts, and full auth — no vendor lock-in.",
 };
 
 export default function RootLayout({

@@ -13,7 +13,7 @@ export type ActiveAccount = {
 };
 
 /**
- * Drop-in replacement for thirdweb's `useActiveAccount`.
+ * Unified hook for the active wallet account state.
  * Returns the connected account or null.
  */
 export function useActiveAccount(): ActiveAccount | null {
